@@ -1,0 +1,161 @@
+# processa ficheiros de arrivals e departures
+# tirados do flights4staff.ana.pt
+# pede um ficheiro de cada vez e
+# devolve o ficheiro filtrado e formatado, para abrir e imprimir
+
+
+import pandas as pd
+import openpyxl
+from openpyxl.styles import PatternFill
+from google.colab import files
+
+# Upload the Excel file
+
+
+print("###### ------------------------------------------ ########")
+print("###### CARREGAR EM BAIXO E ESCOLHER VÔOS CHEGADAS ######## ")
+print("###### ------------------------------------------ ######## ")
+uploaded = files.upload()
+excel_file_name = next(iter(uploaded))
+
+# Load the Excel file into a DataFrame
+df = pd.read_excel(excel_file_name)
+
+# Keep only the desired columns
+desired_columns = ['Mov Type', 'Schedule Date Time', 'Flight Origin', 'Flight Destination', 'Flight Nr', 'Capacity', 'Classification']
+df = df[desired_columns]
+
+# Keep only rows with 'Classification' equal to 'I' or 'NS'
+df = df[df['Classification'].isin(['I', 'NS'])]
+
+# Filter out records where capacity < 20
+df = df[df['Capacity'] >= 20]
+
+# Sort the data by 'Schedule Date Time'
+df.sort_values(by='Schedule Date Time', inplace=True)
+
+# Add a numbered index column
+df.insert(0, 'Quant', range(1, 1 + len(df)))
+
+#tentar renomear colunas
+df.columns = ['___', 'Tipo', 'Hora', 'Origem', 'APIS', 'Vôo', 'Cap.', 'Class.']
+
+# Calculate the sum of 'Cap.' column
+total_capacity = df['Cap.'].sum()
+
+# Save the modified DataFrame to a new Excel file
+output_file_name = 'Arrivals_modif.xlsx'
+df.to_excel(output_file_name, index=False)
+
+# Load the output Excel file using openpyxl
+wb = openpyxl.load_workbook(output_file_name)
+sheet = wb.active
+
+# Set column widths based on cell contents
+for column in sheet.columns:
+    max_length = 0
+    column_letter = openpyxl.utils.get_column_letter(column[0].column)  # Get column letter
+    for cell in column:
+        try:
+            if len(str(cell.value)) > max_length:
+                max_length = len(cell.value)
+        except:
+            pass
+    adjusted_width = (max_length + 1) # * 1.2  # Add some padding and adjust for approximate width
+    sheet.column_dimensions[column_letter].width = adjusted_width
+
+# Center-align text in all cells
+for row in sheet.iter_rows(min_row=2, values_only=False):
+    for cell in row:
+        cell.alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+
+# Apply alternating row colors
+fill = PatternFill(start_color="d9d9d9", end_color="d9d9d9", fill_type="solid")
+for i, row in enumerate(sheet.iter_rows(min_row=2), start=2):
+    if i % 2 == 0:
+        for cell in row:
+            cell.fill = fill
+
+# Add the sum of 'Cap.' column at the bottom of 'Cap.' column
+max_row = len(df) + 2  # Add 2 for header and 1-indexed rows
+sheet.cell(row=max_row, column=3, value=f'Total Cap.: {total_capacity}')
+
+# Save the modified Excel file
+wb.save(output_file_name)
+
+# Download the output Excel file
+files.download(output_file_name)
+
+print(f"Filtered, sorted, and formatted data saved to '{output_file_name}'")
+
+# #################################### PROCESSA PARTIDAS #######################
+
+# Upload the Excel file
+print("###### ---------------------------------------------------------- ########")
+print("###### AGORA ESCOLHER FICHEIRO COM P A R T I D A S                ######## ")
+print("###### ---------------------------------------------------------- ########")
+uploaded = files.upload()
+excel_file_name = next(iter(uploaded))
+
+# Load the Excel file into a DataFrame
+df = pd.read_excel(excel_file_name)
+
+# Keep only the desired columns
+desired_columns = ['Mov Type', 'Schedule Date Time', 'Flight Origin', 'Flight Destination', 'Flight Nr', 'Capacity', 'Classification']
+df = df[desired_columns]
+
+# Keep only rows with 'Classification' equal to 'I' or 'NS'
+df = df[df['Classification'].isin(['I', 'NS'])]
+
+# Filter out records where capacity < 20
+df = df[df['Capacity'] >= 20]
+
+# Sort the data by 'Schedule Date Time'
+df.sort_values(by='Schedule Date Time', inplace=True)
+
+# Add a numbered index column
+df.insert(0, 'Quant', range(1, 1 + len(df)))
+
+#tentar renomear colunas
+df.columns = ['___', 'Tipo', 'Hora', 'Origem', 'Destino', 'Vôo', 'Cap.', 'Class.']
+
+# Save the modified DataFrame to a new Excel file
+output_file_name = 'Departures_modif.xlsx'
+df.to_excel(output_file_name, index=False)
+
+# Load the output Excel file using openpyxl
+wb = openpyxl.load_workbook(output_file_name)
+sheet = wb.active
+
+# Set column widths based on cell contents
+for column in sheet.columns:
+    max_length = 0
+    column_letter = openpyxl.utils.get_column_letter(column[0].column)  # Get column letter
+    for cell in column:
+        try:
+            if len(str(cell.value)) > max_length:
+                max_length = len(cell.value)
+        except:
+            pass
+    adjusted_width = (max_length + 1) # * 1.2  # Add some padding and adjust for approximate width
+    sheet.column_dimensions[column_letter].width = adjusted_width
+
+# Center-align text in all cells
+for row in sheet.iter_rows(min_row=2, values_only=False):
+    for cell in row:
+        cell.alignment = openpyxl.styles.Alignment(horizontal='center', vertical='center')
+
+        # Apply alternating row colors
+fill = PatternFill(start_color="d9d9d9", end_color="d9d9d9", fill_type="solid")
+for i, row in enumerate(sheet.iter_rows(min_row=2), start=2):
+    if i % 2 == 0:
+        for cell in row:
+            cell.fill = fill
+
+# Save the modified Excel file
+wb.save(output_file_name)
+
+# Download the output Excel file
+files.download(output_file_name)
+
+print(f"Filtered, sorted, and formatted data saved to '{output_file_name}'")
